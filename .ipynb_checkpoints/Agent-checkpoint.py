@@ -131,13 +131,15 @@ class MyAgent(Agent):
         uid = agent.user_id
         
         # if self.user_id not in [100, 101, 102]:
-        agent.state = State.RECEIVED
-        self.model.schedule.add(agent)
+        if agent.state != State.ORIGIN:
+            
+            agent.state = State.RECEIVED
+            self.model.schedule.add(agent)
 
-        sanction_score = self.compute_sanction_score(uid)
-        
-        if sanction_score != 0:
-            self.sim_model.G_share.add_node(uid)
+            sanction_score = self.compute_sanction_score(uid)
+
+            if sanction_score != 0:
+                self.sim_model.G_share.add_node(uid)
             self.sim_model.G_share.add_edge(uid, self.user_id, weight = sanction_score)
             
         # if self.user_id == 3:
@@ -173,10 +175,11 @@ class MyAgent(Agent):
         
 #         diff = neighbor_inclination['topic_'+str(topic_id)] - pol_inclination
 #         diff = diff.abs()
+
+        selected_neighbors = list(set(selected_neighbors) - set([100, 101, 102]))
         
 #         selected_neighbors = diff[diff <= se_threshold]
-        
-        return list(selected_neighbors)
+        return selected_neighbors
     
     
     def share_post(self):
@@ -188,26 +191,29 @@ class MyAgent(Agent):
             selected_neighbors = self.selective_exposure(neighbor_nodes)
         else:
             selected_neighbors = neighbor_nodes
-        
+            
         neighbor_agents = [
             agent
             for agent in self.model.grid.get_cell_list_contents(selected_neighbors)
             if (agent.state == State.NOT_RECEIVED)
         ]
         
-        if len(neighbor_agents) > 0:
-            self.state = State.SPREADER
-            
-        else:
-            self.state = State.RECEIVED
-            
+        if self.state != State.ORIGIN:
+        # print("HERE 2")
+
+            if len(neighbor_agents) > 0:
+                self.state = State.SPREADER
+
+            else:
+                self.state = State.RECEIVED
+
         for agent in neighbor_agents:
             self.receiving_agents(agent)
-            
+
 #         if self.user_id == 3:
-            
+
 #             print("neighbor_agents ", neighbor_agents)
-            
+
         self.model.schedule.remove(self)
     
     
